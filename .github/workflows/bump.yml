@@ -1,0 +1,108 @@
+name: bump
+
+# Keep release.json pointed at the newest mcpp release.
+#
+# Three ways in, as in mcpp-community/homebrew-mcpp:
+#   repository_dispatch — upstream's release pipeline may ping us the moment a
+#                         release finishes (event type `mcpp-release`).
+#   schedule            — daily catch-up, so the flake follows releases with no
+#                         token configured upstream.
+#   workflow_dispatch   — manual pin / re-run.
+#
+# Nothing is pushed that has not been built: the x86_64-linux package is built
+# and run, and the URLs and hashes the flake evaluates to for the other two
+# systems are prefetched, before the commit.
+
+on:
+  repository_dispatch:
+    types: [mcpp-release]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "mcpp version to pin (blank = upstream latest)"
+        required: false
+  schedule:
+    - cron: "41 4 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bump
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve target version
+        id: ver
+        env:
+          FROM_DISPATCH: ${{ github.event.client_payload.version }}
+          FROM_INPUT: ${{ github.event.inputs.version }}
+        run: |
+          # Empty on the schedule trigger — update.sh then resolves upstream's
+          # latest release itself.
+          V="${FROM_DISPATCH:-$FROM_INPUT}"
+          echo "version=${V}" >> "$GITHUB_OUTPUT"
+          echo ":: requested version: ${V:-<latest>}"
+
+      - name: Update release.json
+        id: update
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VER: ${{ steps.ver.outputs.version }}
+        run: |
+          set -euo pipefail
+          ./scripts/update.sh ${VER:+"$VER"}
+          if git diff --quiet -- release.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install Nix
+        if: steps.update.outputs.changed == 'true'
+        uses: cachix/install-nix-action@v31
+
+      - name: The flake builds and runs the release on x86_64-linux
+        if: steps.update.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          VER=$(jq -r .version release.json)
+          # release.json is modified and not committed; read the tree as a path
+          # so the flake sees the change.
+          nix flake check "path:$PWD" -L
+          out=$(nix run "path:$PWD#mcpp" -- --version)
+          echo "$out"
+          test "$out" = "mcpp $VER"
+
+      - name: The other systems' assets match their hashes
+        if: steps.update.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          # A fixed-output fetch of another system cannot be BUILT here, so the
+          # URL and hash the flake evaluates to are prefetched instead.
+          for system in aarch64-linux aarch64-darwin; do
+            flake="path:$PWD#packages.$system.mcpp.src"
+            url=$(nix eval --raw "$flake.url")
+            want=$(nix hash convert --hash-algo sha256 --to sri "$(nix eval --raw "$flake.outputHash")")
+            got=$(nix store prefetch-file --json --hash-type sha256 "$url" | jq -r .hash)
+            echo ":: $system $url want=$want got=$got"
+            test "$want" = "$got"
+          done
+
+      - name: Commit and push
+        if: steps.update.outputs.changed == 'true'
+        run: |
+          set -eu
+          VER=$(jq -r .version release.json)
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -qm "mcpp ${VER}" -- release.json
+          git push
+          echo ":: pushed mcpp ${VER}"
+          echo "Bumped the flake to **${VER}**." >> "$GITHUB_STEP_SUMMARY"
