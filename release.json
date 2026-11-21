@@ -1,32 +1,32 @@
 {
   "schema": 1,
-  "version": "2026.11.20.1",
-  "tag": "v2026.11.20.1",
-  "commit": "722ec1b673ea985b2be8b1f8882ca1f60990184f",
+  "version": "2026.11.21.1",
+  "tag": "v2026.11.21.1",
+  "commit": "6b90f4d61110252d0deed7c4ed939cf1f6ea6032",
   "assets": [
     {
       "platform": "linux",
       "arch": "aarch64",
-      "name": "mcpp-2026.11.20.1-linux-aarch64.tar.gz",
-      "sha256": "9093226af8a37592e37fa1b2b782fa065db787aaab1edec60e7487e117461598"
+      "name": "mcpp-2026.11.21.1-linux-aarch64.tar.gz",
+      "sha256": "10febf8740f41755b32451ab5d75ea06b024c216e2c4f964229ab74f8f6a3f32"
     },
     {
       "platform": "linux",
       "arch": "x86_64",
-      "name": "mcpp-2026.11.20.1-linux-x86_64.tar.gz",
-      "sha256": "410053964917d54ca1baf74909a13089629a1aef5d8eefee994debcdd63bc840"
+      "name": "mcpp-2026.11.21.1-linux-x86_64.tar.gz",
+      "sha256": "bafefffb6651b47e3e1be0c85f12df091a9e60d8f635537c6812295dc2327ac2"
     },
     {
       "platform": "macos",
       "arch": "arm64",
-      "name": "mcpp-2026.11.20.1-macosx-arm64.tar.gz",
-      "sha256": "43f4fa908122d696c080094d097f87ad8395eab077f4345d0b599108b2bd19ff"
+      "name": "mcpp-2026.11.21.1-macosx-arm64.tar.gz",
+      "sha256": "9d535e4f89dc63f58d122527b4441f46c52fe6b4d5b386f3672494b10c55a35d"
     },
     {
       "platform": "windows",
       "arch": "x86_64",
-      "name": "mcpp-2026.11.20.1-windows-x86_64.zip",
-      "sha256": "b0e71cbaf8943ea06a0c10417efd7f724ab6c888edf0e0ec5fa6ee07717ba8aa"
+      "name": "mcpp-2026.11.21.1-windows-x86_64.zip",
+      "sha256": "a39c91c15f082458210e76874ed6ee88b3402c357ac723fb2faa12c2b82bcff4"
     }
   ]
 }
